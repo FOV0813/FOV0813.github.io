@@ -161,7 +161,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/w4rspit3/2021/11/19/%E5%86%85%E5%AD%98%E5%8F%96%E8%AF%81/" class="post-title-link" itemprop="url">未命名</a>
+            <a href="/w4rspit3/2021/11/19/%E5%86%85%E5%AD%98%E5%8F%96%E8%AF%81/" class="post-title-link" itemprop="url">Python的一些基础语法</a>
         </h2>
 
         <div class="post-meta">
@@ -172,7 +172,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2021-11-19 22:53:46 / 修改时间：22:44:15" itemprop="dateCreated datePublished" datetime="2021-11-19T22:53:46+08:00">2021-11-19</time>
+              <time title="创建时间：2021-11-19 22:53:46 / 修改时间：23:00:02" itemprop="dateCreated datePublished" datetime="2021-11-19T22:53:46+08:00">2021-11-19</time>
             </span>
 
           
@@ -202,7 +202,6 @@
 
 <h3 id="基本的volatility操作组合"><a href="#基本的volatility操作组合" class="headerlink" title="基本的volatility操作组合"></a>基本的volatility操作组合</h3><h4 id="获取内存中的文件信息并导出"><a href="#获取内存中的文件信息并导出" class="headerlink" title="获取内存中的文件信息并导出"></a>获取内存中的文件信息并导出</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">volatility -f imagename --profile=profiletype filescan | grep [targetfile]</span><br><span class="line"></span><br><span class="line">volatility -f imagename --profile=profiletype dumpfiles -Q [offset] -D [dumpdir]</span><br></pre></td></tr></table></figure>
 
-<p><img src="C:\Users\23531\AppData\Roaming\Typora\typora-user-images\image-20211119213532106.png" alt="image-20211119213532106"></p>
 <p>提取的文件并不一定能成功获取有用的数据</p>
 <h4 id="获取进程信息并导出可疑进程"><a href="#获取进程信息并导出可疑进程" class="headerlink" title="获取进程信息并导出可疑进程"></a>获取进程信息并导出可疑进程</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">volatility -f imagename --profile=profiletype pslist</span><br><span class="line"></span><br><span class="line">volatility -f imagename --profile=profiletype memdump -p [pid] -D [dumpdir]</span><br></pre></td></tr></table></figure>
 
